@@ -1,8 +1,8 @@
 ﻿using DeliveryService.Commands;
 using DeliveryService.Models;
 using DeliveryService.Services;
-using System.Windows;
-using System.Windows.Input;
+using DeliveryService.Utils;
+
 
 namespace DeliveryService.ViewModels
 {
@@ -12,7 +12,6 @@ namespace DeliveryService.ViewModels
     public class NewOrderViewModel : BaseViewModel
     {
         private readonly SessionService _sessionService;
-
         private readonly OrderService _orderService;
         private readonly ClientService _clientService;
         private readonly BasketService _basketService;
@@ -165,7 +164,6 @@ namespace DeliveryService.ViewModels
         /// </summary>
         public ICommand LoadUserCommand { get; }
 
-
         public NewOrderViewModel(SessionService sessionService, 
             OrderService orderService, ClientService clientService, BasketService basketService, WindowsService windowService, CourierService courierService)
         {
@@ -175,8 +173,9 @@ namespace DeliveryService.ViewModels
             _basketService = basketService;
             _windowService = windowService;
             _courierService = courierService;
-
             _clientBasket = new List<Basket>();
+
+            Logger.LogDebug("NewOrderViewModel инициализирован");
 
             SaveCommand = new RelayCommandAsync(
                 execute: () => TryRunTaskAsync(SaveOrderAsync, "Ошибка создания заказа"),
@@ -191,22 +190,34 @@ namespace DeliveryService.ViewModels
             );
 
             LoadUserCommand.Execute(null);
-
             IsFromMode = true;
+            
+            Logger.LogDebug($"NewOrderViewModel настроен для пользователя {_sessionService.CurrentClient?.Id}");
         }
-
 
         /// <summary>
         /// Загрузка имени и телефона пользователя
         /// </summary>
         private async Task LoadUser()
         {
-            ClientName = _sessionService.CurrentClient.Name;
-            ClientPhone = _sessionService.CurrentClient.Phone.ToString();
+            Logger.LogInfo($"Загрузка данных пользователя {_sessionService.CurrentClient?.Id}");
+            
+            try
+            {
+                ClientName = _sessionService.CurrentClient.Name;
+                ClientPhone = _sessionService.CurrentClient.Phone.ToString();
 
-            var (userBasket, totalPrice) = await _basketService.GetUserActiveBasketAsync(_sessionService.CurrentClient.Id);
-            _clientBasket = userBasket;
-            Price = totalPrice;
+                var (userBasket, totalPrice) = await _basketService.GetUserActiveBasketAsync(_sessionService.CurrentClient.Id);
+                _clientBasket = userBasket;
+                Price = totalPrice;
+                
+                Logger.LogInfo($"Пользователь {_sessionService.CurrentClient.Id} загружен. Имя: {ClientName}, корзина: {_clientBasket.Count} позиций, сумма: {Price:C}");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Ошибка при загрузке пользователя {_sessionService.CurrentClient?.Id}", ex);
+                throw;
+            }
         }
 
         /// <summary>
@@ -218,28 +229,34 @@ namespace DeliveryService.ViewModels
             if (string.IsNullOrWhiteSpace(ClientName))
             {
                 ErrorMessage = "Введите имя клиента";
+                Logger.LogWarning("Ошибка валидации: не указано имя клиента");
                 return false;
             }
             if (string.IsNullOrWhiteSpace(AddressFrom))
             {
                 ErrorMessage = "Укажите адрес отправления";
+                Logger.LogWarning("Ошибка валидации: не указан адрес отправления");
                 return false;
             }
             if (string.IsNullOrWhiteSpace(AddressTo))
             {
                 ErrorMessage = "Укажите адрес доставки";
+                Logger.LogWarning("Ошибка валидации: не указан адрес доставки");
                 return false;
             }
             if (Price <= 0)
             {
                 ErrorMessage = "Цена должна быть больше нуля";
+                Logger.LogWarning($"Ошибка валидации: некорректная цена {Price}");
                 return false;
             }
 
+            Logger.LogDebug("Валидация полей заказа пройдена успешно");
             return true;
         }
+
         /// <summary>
-        /// Проверка валидации ClientPhone и "очишение" от не-цифр
+        /// Проверка валидации ClientPhone и "очищение" от не-цифр
         /// </summary>
         /// <returns>true, если валиден, иначе false</returns>
         private bool ValidatePhoneNumber()
@@ -248,6 +265,7 @@ namespace DeliveryService.ViewModels
             {
                 ErrorMessage = "Введите номер телефона";
                 _cleanedPhoneNumber = null;
+                Logger.LogWarning("Ошибка валидации: не указан номер телефона");
                 return false;
             }
 
@@ -256,69 +274,100 @@ namespace DeliveryService.ViewModels
             {
                 ErrorMessage = "Номер телефона должен содержать хотя бы одну цифру";
                 _cleanedPhoneNumber = null;
+                Logger.LogWarning($"Ошибка валидации: номер телефона '{ClientPhone}' не содержит цифр");
                 return false;
             }
             if (cleaned.Length < 10 || cleaned.Length > 11)
             {
                 ErrorMessage = "Номер телефона должен содержать 10–11 цифр";
                 _cleanedPhoneNumber = null;
+                Logger.LogWarning($"Ошибка валидации: длина номера {cleaned.Length} цифр (требуется 10-11)");
                 return false;
             }
 
             _cleanedPhoneNumber = cleaned;
+            Logger.LogDebug($"Номер телефона валиден: {_cleanedPhoneNumber}");
             return true;
         }
-
 
         private async Task SaveOrderAsync()
         {
             ErrorMessage = null;
+            Logger.LogInfo($"Начало создания заказа для пользователя {_sessionService.CurrentClient?.Id}");
 
             if (!ValidateProperty())
+            {
+                Logger.LogWarning("Создание заказа отменено: не пройдена валидация полей");
                 return;
+            }
 
             if (_clientBasket == null || _clientBasket.Count == 0)
             {
                 ErrorMessage = "Корзина пуста. Невозможно оформить заказ.";
+                Logger.LogWarning($"Создание заказа отменено: корзина пользователя {_sessionService.CurrentClient?.Id} пуста");
                 return;
             }
 
-            Client? client = await _clientService.GetClientById(_sessionService.CurrentClient.Id);
-            if (client == null)
+            Logger.LogDebug($"Корзина пользователя {_sessionService.CurrentClient?.Id} содержит {_clientBasket.Count} позиций на сумму {Price:C}");
+
+            try
             {
-                if (!int.TryParse(ClientPhone, out int phoneNumber))
+                Client? client = await _clientService.GetClientById(_sessionService.CurrentClient.Id);
+                if (client == null)
                 {
-                    ErrorMessage = "Номер телефона должен содержать только цифры";
+                    if (!int.TryParse(ClientPhone, out int phoneNumber))
+                    {
+                        ErrorMessage = "Номер телефона должен содержать только цифры";
+                        Logger.LogWarning($"Ошибка: клиент {_sessionService.CurrentClient.Id} не найден, номер телефона не распознан: {ClientPhone}");
+                        return;
+                    }
+                }
+
+                var order = new Order
+                {
+                    ClientId = _sessionService.CurrentClient.Id,
+                    Address_From = AddressFrom,
+                    Lat_From = LatFrom,
+                    Lon_From = LonFrom,
+                    Address_To = AddressTo,
+                    Lat_To = LatTo,
+                    Lon_To = LonTo,
+                    Price = Price,             
+                    Status = "Новый",
+                    Created_At = DateTime.UtcNow,
+                    BasketId = _clientBasket[0].Id, 
+                };
+                
+                Logger.LogDebug($"Создаем заказ: от {AddressFrom} до {AddressTo}, цена {Price:C}");
+                
+                bool success = await _orderService.CreateOrderAsync(client, order);
+                if (!success)
+                {
+                    ErrorMessage = "Не удалось создать заказ";
+                    Logger.LogError($"Не удалось создать заказ для пользователя {_sessionService.CurrentClient.Id}", new Exception("CreateOrderAsync вернул false"));
                     return;
                 }
-            }
+                
+                _sessionService.CurrentOrder = order;
+                Logger.LogInfo($"Заказ {order.Id} успешно создан для пользователя {_sessionService.CurrentClient.Id}");
 
-            var order = new Order
-            {
-                ClientId = _sessionService.CurrentClient.Id,
-                Address_From = AddressFrom,
-                Lat_From = LatFrom,
-                Lon_From = LonFrom,
-                Address_To = AddressTo,
-                Lat_To = LatTo,
-                Lon_To = LonTo,
-                Price = Price,             
-                Status = "Новый",
-                Created_At = DateTime.UtcNow,
-                BasketId = _clientBasket[0].Id, 
-            };
-            bool success = await _orderService.CreateOrderAsync(client, order);
-            if (!success)
-            {
-                ErrorMessage = "Не удалось создать заказ";
-                return;
+                foreach (var item in _clientBasket)
+                {
+                    await _basketService.RemoveItemAsync(item.Id);
+                    Logger.LogDebug($"Удален товар из корзины: BasketId={item.Id}");
+                }
+                
+                Logger.LogInfo($"Корзина пользователя {_sessionService.CurrentClient.Id} очищена после создания заказа");
+                
+                _windowService.OpenOrderAccept();
+                CloseWindow(true);
             }
-            _sessionService.CurrentOrder = order;
-
-            foreach (var item in _clientBasket)
-                await _basketService.RemoveItemAsync(item.Id);
-            _windowService.OpenOrderAccept();
-            CloseWindow(true);
+            catch (Exception ex)
+            {
+                Logger.LogError($"Ошибка при сохранении заказа для пользователя {_sessionService.CurrentClient?.Id}", ex);
+                ErrorMessage = $"Ошибка при создании заказа: {ex.Message}";
+                throw;
+            }
         }
        
         /// <summary>
@@ -334,6 +383,7 @@ namespace DeliveryService.ViewModels
                 LatFrom = lat;
                 LonFrom = lon;
                 AddressFrom = address;
+                Logger.LogDebug($"Установлен адрес отправки: {address} ({lat}, {lon})");
                 IsFromMode = !IsFromMode;
             }
             else
@@ -341,8 +391,8 @@ namespace DeliveryService.ViewModels
                 LatTo = lat;
                 LonTo = lon;
                 AddressTo = address;
+                Logger.LogDebug($"Установлен адрес доставки: {address} ({lat}, {lon})");
                 IsFromMode = !IsFromMode;
-
             }
         }
 
@@ -352,6 +402,8 @@ namespace DeliveryService.ViewModels
         /// <param name="result">Результат работы окна</param>
         private void CloseWindow(bool result)
         {
+            Logger.LogDebug($"Закрытие окна NewOrderView с результатом {result}");
+            
             var window = Application.Current.Windows
                 .OfType<Window>()
                 .FirstOrDefault(w => w.DataContext == this);
@@ -360,6 +412,11 @@ namespace DeliveryService.ViewModels
             {
                 window.DialogResult = result;
                 window.Close();
+                Logger.LogDebug("Окно NewOrderView закрыто");
+            }
+            else
+            {
+                Logger.LogWarning("Окно NewOrderView не найдено для закрытия");
             }
         }
     }

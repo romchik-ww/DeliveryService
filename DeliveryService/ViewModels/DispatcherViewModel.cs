@@ -1,10 +1,8 @@
 ﻿using DeliveryService.Commands;
 using DeliveryService.Models;
 using DeliveryService.Services;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Windows.Input;
-using System.Windows.Threading;
+using DeliveryService.Utils;
+
 
 namespace DeliveryService.ViewModels
 {
@@ -33,8 +31,6 @@ namespace DeliveryService.ViewModels
 
         public event Action? DisposeRequested;
         
-
-        // ВАЖНО: Поменять названия статусов в комментариях
         /// <summary>
         /// Счётчик заказов со статусом "New"
         /// </summary>
@@ -55,9 +51,6 @@ namespace DeliveryService.ViewModels
         /// Выбранный курьер
         /// </summary>
         private Courier _selectedCourier;
-        /// <summary>
-        /// Выбранный курьер
-        /// </summary>
        
         public Courier SelectedCourier
         {
@@ -94,7 +87,6 @@ namespace DeliveryService.ViewModels
         /// </summary>
         public ObservableCollection<Courier> FreeCouriers { get; }
 
-        // ВАЖНО: Поменять названия статусов в комментариях
         /// <summary>
         /// Счётчик заказов со статусом "New"
         /// </summary>
@@ -159,6 +151,8 @@ namespace DeliveryService.ViewModels
             FreeCouriers = new ObservableCollection<Courier>();
             _simulationService.CourierFinal += _simulationService_CourierFinal;
 
+            Logger.LogDebug("DispatcherViewModel инициализирован");
+
             LoadDataCommand = new RelayCommandAsync(
                 execute: () => TryRunTaskAsync(LoadDataAsync, "Ошибка загрузки"),
                 canExecute: () => !IsBusy
@@ -166,89 +160,142 @@ namespace DeliveryService.ViewModels
 
             AssignCourierCommand = new RelayCommandAsync(async order =>
             {
-                if (SelectedCourier == null || order == null) return;
+                if (SelectedCourier == null || order == null)
+                {
+                    Logger.LogWarning("Попытка назначения курьера: курьер или заказ не выбран");
+                    return;
+                }
+                
                 Order ord = (Order)order;
+                Logger.LogInfo($"Назначение курьера {SelectedCourier.Id} на заказ {ord.Id}");
+                
                 bool success = await _courierService.AssignCourierToOrderAsync(SelectedCourier.Id, ord.Id);
-                if (success) await LoadDataAsync();
+                if (success)
+                {
+                    Logger.LogInfo($"Курьер {SelectedCourier.Id} успешно назначен на заказ {ord.Id}");
+                    await LoadDataAsync();
+                }
+                else
+                {
+                    Logger.LogWarning($"Не удалось назначить курьера {SelectedCourier.Id} на заказ {ord.Id}");
+                }
             });
 
             SelectOrderCommand = new RelayCommandAsync(async order =>
             {
                 if (order == null) return;
                 SelectedOrder = (Order)order;
+                Logger.LogDebug($"Выбран заказ {SelectedOrder.Id} со статусом {SelectedOrder.Status}");
                 OrderSelected?.Invoke((Order)order);
             });
-
 
             SelectCourierCommand = new RelayCommandAsync(async parameter =>
             {
                 if (parameter is not Courier courier)
+                {
+                    Logger.LogWarning("SelectCourierCommand: параметр не является курьером");
                     return;
+                }
+                
                 SelectedCourier = courier;
+                Logger.LogDebug($"Выбран курьер {SelectedCourier.Id}: {SelectedCourier.Name}, статус: {(SelectedCourier.IsActive ? "онлайн" : "офлайн")}");
 
-                SelectedOrder = await _orderService
-                    .FindOrderByCourierIdAsync(courier.Id);
+                SelectedOrder = await _orderService.FindOrderByCourierIdAsync(courier.Id);
 
-                if (SelectedOrder == null) return;
+                if (SelectedOrder == null)
+                {
+                    Logger.LogDebug($"У курьера {courier.Id} нет активных заказов");
+                    return;
+                }
+                
                 if (SelectedCourier == null) return;
 
+                Logger.LogDebug($"Курьер {courier.Id} назначен на заказ {SelectedOrder.Id}");
                 CourierSelected?.Invoke(SelectedOrder.Lat_From, SelectedOrder.Lon_From, SelectedOrder.Lat_To, SelectedOrder.Lon_To, SelectedCourier.Current_Lat, SelectedCourier.Current_Lon);
             });
-
         }
 
         /// <summary>
         /// Функция, срабатывающая при достижении курьером финальной точки
         /// </summary>
-        private void _simulationService_CourierFinal()=> LoadDataCommand.Execute(null);
+        private void _simulationService_CourierFinal()
+        {
+            Logger.LogInfo("Курьер достиг финальной точки, обновление данных");
+            LoadDataCommand.Execute(null);
+        }
 
         /// <summary>
         /// Загрузка данных о заказах
         /// </summary>
         private async Task LoadOrdersAsync()
         {
-            var allOrders = await _orderService.GetAllAsync();
-
-            if (allOrders != null && allOrders.Any())
+            Logger.LogDebug("Начало загрузки заказов");
+            
+            try
             {
-                var activeOrders = allOrders.Where(o => o.Status != "Доставлен").OrderByDescending(o => o.Created_At).ToList();
+                var allOrders = await _orderService.GetAllAsync();
 
-                ActiveOrders.Clear();
-                foreach (var order in activeOrders) 
-                    ActiveOrders.Add(order);
+                if (allOrders != null && allOrders.Any())
+                {
+                    var activeOrders = allOrders.Where(o => o.Status != "Доставлен").OrderByDescending(o => o.Created_At).ToList();
 
-                NewOrderCount = activeOrders.Count(o => o.Status == "Новый");
-                InTransitOrderCount = activeOrders.Count(o => o.Status == "В пути");
-                CompletedOrderCount = allOrders.Count(o => o.Status == "Доставлен");
+                    ActiveOrders.Clear();
+                    foreach (var order in activeOrders) 
+                        ActiveOrders.Add(order);
+
+                    NewOrderCount = activeOrders.Count(o => o.Status == "Новый");
+                    InTransitOrderCount = activeOrders.Count(o => o.Status == "В пути");
+                    CompletedOrderCount = allOrders.Count(o => o.Status == "Доставлен");
+
+                    Logger.LogDebug($"Заказы загружены: Всего={allOrders.Count}, Активных={activeOrders.Count}, Новых={NewOrderCount}, В пути={InTransitOrderCount}, Доставлено={CompletedOrderCount}");
+                }
+                else
+                {
+                    ActiveOrders.Clear();
+                    NewOrderCount = 0;
+                    InTransitOrderCount = 0;
+                    CompletedOrderCount = 0;
+                    Logger.LogDebug("Заказы не найдены");
+                    return;
+                }
             }
-            else
+            catch (Exception ex)
             {
-                ActiveOrders.Clear();
-
-                NewOrderCount = 0;
-                InTransitOrderCount = 0;
-                CompletedOrderCount = 0;
-
-                return;
+                Logger.LogError("Ошибка при загрузке заказов", ex);
+                throw;
             }
         }
+
         /// <summary>
         /// Загрузка свободных курьеров
         /// </summary>
         /// <returns></returns>
         private async Task LoadFreeCouriersAsync()
         {
-            var freeCouriers = await _courierService.GetFreeCouriersAsync();
-            if (freeCouriers == null)
-                return;
+            Logger.LogDebug("Начало загрузки свободных курьеров");
+            
+            try
+            {
+                var freeCouriers = await _courierService.GetFreeCouriersAsync();
+                if (freeCouriers == null)
+                {
+                    Logger.LogDebug("Свободные курьеры не найдены");
+                    return;
+                }
 
-            var onlineCouriers = freeCouriers.Where(c => c.IsActive).ToList();
+                var onlineCouriers = freeCouriers.Where(c => c.IsActive).ToList();
 
-            FreeCouriers.Clear();
-            foreach (var courier in onlineCouriers)
-                FreeCouriers.Add(courier);
-;
+                FreeCouriers.Clear();
+                foreach (var courier in onlineCouriers)
+                    FreeCouriers.Add(courier);
 
+                Logger.LogDebug($"Загружено {FreeCouriers.Count} свободных курьеров");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("Ошибка при загрузке свободных курьеров", ex);
+                throw;
+            }
         }
 
         /// <summary>
@@ -257,22 +304,51 @@ namespace DeliveryService.ViewModels
         /// <param name="courierId">Айди курьера</param>
         /// <param name="orderId">Айди заказа</param>
         /// <returns></returns>
-        public async Task AssignCourier(int courierId, int orderId) => await _courierService.AssignCourierToOrderAsync(courierId, orderId);
+        public async Task AssignCourier(int courierId, int orderId)
+        {
+            Logger.LogInfo($"Назначение курьера {courierId} на заказ {orderId}");
+            
+            try
+            {
+                await _courierService.AssignCourierToOrderAsync(courierId, orderId);
+                Logger.LogInfo($"Курьер {courierId} успешно назначен на заказ {orderId}");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Ошибка при назначении курьера {courierId} на заказ {orderId}", ex);
+                throw;
+            }
+        }
 
         /// <summary>
         /// Загрузка данных об курьерах
         /// </summary>
         private async Task LoadCouriersAsync()
         {
-            var allCouriers = await _courierService.GetAllAsync();
-            if (allCouriers == null) 
-                return;
+            Logger.LogDebug("Начало загрузки курьеров");
+            
+            try
+            {
+                var allCouriers = await _courierService.GetAllAsync();
+                if (allCouriers == null)
+                {
+                    Logger.LogDebug("Курьеры не найдены");
+                    return;
+                }
 
-            var onlineCouriers = allCouriers.Where(c => c.IsActive).ToList();
+                var onlineCouriers = allCouriers.Where(c => c.IsActive).ToList();
 
-            OnlineCouriers.Clear();
-            foreach (var courier in onlineCouriers)
-                OnlineCouriers.Add(courier);
+                OnlineCouriers.Clear();
+                foreach (var courier in onlineCouriers)
+                    OnlineCouriers.Add(courier);
+
+                Logger.LogDebug($"Загружено {OnlineCouriers.Count} онлайн-курьеров из {allCouriers.Count} всего");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("Ошибка при загрузке курьеров", ex);
+                throw;
+            }
         }
 
         /// <summary>
@@ -280,22 +356,38 @@ namespace DeliveryService.ViewModels
         /// </summary>
         private async Task LoadDataAsync()
         {
-            await LoadOrdersAsync();
-            await LoadCouriersAsync();
-            await LoadFreeCouriersAsync();
+            Logger.LogDebug("Полная загрузка данных диспетчера");
+            
+            try
+            {
+                await LoadOrdersAsync();
+                await LoadCouriersAsync();
+                await LoadFreeCouriersAsync();
+                Logger.LogDebug("Данные диспетчера успешно обновлены");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("Ошибка при полной загрузке данных диспетчера", ex);
+                throw;
+            }
         }
+
         /// <summary>
         /// Старт таймера
         /// </summary>
         public void TimerStart()
         {
-            Debug.WriteLine("Timer start");
+            Logger.LogInfo($"Запуск таймера обновления с интервалом {TIMER_INTERVAL} секунд");
+            
             _refreshTimer = new DispatcherTimer();
             _refreshTimer.Interval = TimeSpan.FromSeconds(TIMER_INTERVAL);
             _refreshTimer.Tick += OnTimerTick;
             _refreshTimer.Start();
             _isTimerActive = true;
+            
+            Debug.WriteLine("Timer start");
         }
+
         /// <summary>
         /// Остановка таймера
         /// </summary>
@@ -303,23 +395,49 @@ namespace DeliveryService.ViewModels
         {
             if (_isTimerActive)
             {
-                Debug.WriteLine("Timer stop");
+                Logger.LogInfo("Остановка таймера обновления");
                 _refreshTimer.Stop();
                 _refreshTimer.Tick -= OnTimerTick;
                 _isTimerActive = false;
+                Debug.WriteLine("Timer stop");
+            }
+            else
+            {
+                Logger.LogDebug("Попытка остановить неактивный таймер");
             }
         }
 
         /// <summary>
         /// Логика таймера
         /// </summary>
-        private void OnTimerTick(object? sender, EventArgs e) => LoadDataCommand.Execute(null);
+        private void OnTimerTick(object? sender, EventArgs e)
+        {
+            Logger.LogDebug("Срабатывание таймера обновления данных");
+            LoadDataCommand.Execute(null);
+        }
 
         public async Task SaveCoords(double v1, double v2)
         {
-            SelectedCourier.Current_Lat = v1;
-            SelectedCourier.Current_Lon = v2;
-            await _courierService.Update(SelectedCourier);
+            if (SelectedCourier == null)
+            {
+                Logger.LogWarning("Попытка сохранить координаты без выбранного курьера");
+                return;
+            }
+            
+            Logger.LogDebug($"Сохранение координат курьера {SelectedCourier.Id}: ({v1}, {v2})");
+            
+            try
+            {
+                SelectedCourier.Current_Lat = v1;
+                SelectedCourier.Current_Lon = v2;
+                await _courierService.Update(SelectedCourier);
+                Logger.LogDebug($"Координаты курьера {SelectedCourier.Id} успешно сохранены");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Ошибка при сохранении координат курьера {SelectedCourier?.Id}", ex);
+                throw;
+            }
         }
     }
 }

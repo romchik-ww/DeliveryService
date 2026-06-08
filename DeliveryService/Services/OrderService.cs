@@ -1,5 +1,7 @@
 ﻿using DeliveryService.Models;
 using DeliveryService.Repositories;
+using DeliveryService.Utils;
+
 
 namespace DeliveryService.Services
 {
@@ -11,6 +13,24 @@ namespace DeliveryService.Services
         private readonly OrderRepository _orderRepository;
         private readonly ClientRepository _clientRepository;
 
+
+        public async Task CreateOrderAsync(int orderId)
+        {
+            // Теперь можно использовать Logger напрямую
+            Logger.LogInfo($"Начинаем создание заказа {orderId}");
+            
+            try
+            {
+                // Ваша логика
+                Logger.LogDebug($"Детали заказа: ID={orderId}");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Ошибка при создании заказа {orderId}", ex);
+                throw;
+            }
+        }
+        
         public OrderService(OrderRepository orderRepo, ClientRepository clientRepo)
         {
             _orderRepository = orderRepo;

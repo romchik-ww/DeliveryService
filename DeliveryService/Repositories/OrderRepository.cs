@@ -1,6 +1,7 @@
 ﻿using DeliveryService.Data;
 using DeliveryService.Models;
-using Microsoft.EntityFrameworkCore;
+using DeliveryService.Utils;
+
 
 namespace DeliveryService.Repositories
 {
@@ -11,29 +12,65 @@ namespace DeliveryService.Repositories
     {
         private readonly AppDbContext _context;
 
-
         public OrderRepository(AppDbContext context)
         {
             _context = context;
+            Logger.LogDebug("OrderRepository инициализирован");
         }
-
 
         /// <summary>
         /// Получение заказа по id
         /// </summary>
         /// <param name="orderId">ID заказа</param>
         /// <returns>Заказ</returns>
-        /// 
-
-        public async Task<Order?> GetById(int orderId) => await _context.Orders.FindAsync(orderId);
-
+        public async Task<Order?> GetById(int orderId)
+        {
+            Logger.LogDebug($"Запрос заказа с ID {orderId}");
+            
+            try
+            {
+                var result = await _context.Orders.FindAsync(orderId);
+                
+                if (result == null)
+                    Logger.LogWarning($"Заказ с ID {orderId} не найден");
+                else
+                    Logger.LogDebug($"Заказ {orderId} найден");
+                    
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Ошибка при получении заказа {orderId}", ex);
+                throw;
+            }
+        }
 
         /// <summary>
         /// Получение заказа по айди курьера
         /// </summary>
         /// <param name="courierId">айди курьера</param>
         /// <returns></returns>
-        public async Task<Order?> GetByCourierId(int courierId) => await _context.Orders.FirstOrDefaultAsync(x=>x.CourierId == courierId);
+        public async Task<Order?> GetByCourierId(int courierId)
+        {
+            Logger.LogDebug($"Запрос заказа для курьера {courierId}");
+            
+            try
+            {
+                var result = await _context.Orders.FirstOrDefaultAsync(x => x.CourierId == courierId);
+                
+                if (result == null)
+                    Logger.LogDebug($"Активных заказов для курьера {courierId} не найдено");
+                else
+                    Logger.LogDebug($"Найден заказ {result?.Id} для курьера {courierId}");
+                    
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Ошибка при получении заказа для курьера {courierId}", ex);
+                throw;
+            }
+        }
 
         /// <summary>
         /// Получение всех заказов
@@ -41,12 +78,25 @@ namespace DeliveryService.Repositories
         /// <returns>Список заказов</returns>
         public async Task<List<Order>> GetAllAsync()
         {
-            return await _context.Orders
-                .Include(o => o.Client)
-                .Include(o => o.Courier)
-                .Include(o => o.RoutePoints)
-                .Include(o => o.StatusHistory)
-                .ToListAsync();
+            Logger.LogDebug("Запрос всех заказов из БД");
+            
+            try
+            {
+                var result = await _context.Orders
+                    .Include(o => o.Client)
+                    .Include(o => o.Courier)
+                    .Include(o => o.RoutePoints)
+                    .Include(o => o.StatusHistory)
+                    .ToListAsync();
+                    
+                Logger.LogDebug($"Получено {result.Count} заказов");
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("Ошибка при получении всех заказов", ex);
+                throw;
+            }
         }
 
         /// <summary>
@@ -55,13 +105,26 @@ namespace DeliveryService.Repositories
         /// <returns>Список незавершённых заказов</returns>
         public async Task<List<Order>> GetActive()
         {
-            return await _context.Orders
-                .Where(o => o.Status != "Done") // Изменить на нужный статус или добавить ещё условия
-                .Include(o => o.Client)
-                .Include(o => o.Courier)
-                .Include(o => o.RoutePoints)
-                .Include(o => o.StatusHistory)
-                .ToListAsync();
+            Logger.LogDebug("Запрос активных (незавершенных) заказов");
+            
+            try
+            {
+                var result = await _context.Orders
+                    .Where(o => o.Status != "Done")
+                    .Include(o => o.Client)
+                    .Include(o => o.Courier)
+                    .Include(o => o.RoutePoints)
+                    .Include(o => o.StatusHistory)
+                    .ToListAsync();
+                    
+                Logger.LogDebug($"Получено {result.Count} активных заказов");
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("Ошибка при получении активных заказов", ex);
+                throw;
+            }
         }
 
         /// <summary>
@@ -70,8 +133,25 @@ namespace DeliveryService.Repositories
         /// <param name="order">Заказ</param>
         public async Task AddAsync(Order order)
         {
-            await _context.Orders.AddAsync(order);
-            await _context.SaveChangesAsync();
+            if (order == null)
+            {
+                Logger.LogWarning("Попытка добавить null-заказ");
+                return;
+            }
+
+            Logger.LogInfo($"Добавление нового заказа: ID={order.Id}, Клиент={order.ClientId}");
+            
+            try
+            {
+                await _context.Orders.AddAsync(order);
+                await _context.SaveChangesAsync();
+                Logger.LogInfo($"Заказ {order.Id} успешно добавлен в БД");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Ошибка при добавлении заказа {order.Id}", ex);
+                throw;
+            }
         }
 
         /// <summary>
@@ -80,8 +160,25 @@ namespace DeliveryService.Repositories
         /// <param name="order">Заказ</param>
         public async Task UpdateAsync(Order order)
         {
-            _context.Orders.Update(order);
-            await _context.SaveChangesAsync();
+            if (order == null)
+            {
+                Logger.LogWarning("Попытка обновить null-заказ");
+                return;
+            }
+
+            Logger.LogDebug($"Обновление заказа {order.Id}. Статус: {order.Status}");
+            
+            try
+            {
+                _context.Orders.Update(order);
+                await _context.SaveChangesAsync();
+                Logger.LogDebug($"Заказ {order.Id} успешно обновлен");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Ошибка при обновлении заказа {order.Id}", ex);
+                throw;
+            }
         }
 
         /// <summary>
@@ -90,10 +187,26 @@ namespace DeliveryService.Repositories
         /// <param name="order">Заказ</param>
         public async Task DeleteAsync(Order order)
         {
-            _context.Orders.Remove(order);
-            await _context.SaveChangesAsync();
-        }
+            if (order == null)
+            {
+                Logger.LogWarning("Попытка удалить null-заказ");
+                return;
+            }
 
+            Logger.LogInfo($"Удаление заказа {order.Id}");
+            
+            try
+            {
+                _context.Orders.Remove(order);
+                await _context.SaveChangesAsync();
+                Logger.LogInfo($"Заказ {order.Id} успешно удален из БД");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Ошибка при удалении заказа {order.Id}", ex);
+                throw;
+            }
+        }
 
         /// <summary>
         /// Добавление в историю изменения статусов заказов
@@ -102,9 +215,25 @@ namespace DeliveryService.Repositories
         /// <returns></returns>
         public async Task AddStatusHistoryAsync(OrderStatusHistory history)
         {
-            await _context.OrderStatusHistories.AddAsync(history);
-            await _context.SaveChangesAsync();
-        }
+            if (history == null)
+            {
+                Logger.LogWarning("Попытка добавить null-историю статуса");
+                return;
+            }
 
+            Logger.LogDebug($"Добавление записи в историю статусов: Заказ {history.OrderId}, Статус {history.Status}");
+            
+            try
+            {
+                await _context.OrderStatusHistories.AddAsync(history);
+                await _context.SaveChangesAsync();
+                Logger.LogDebug($"Запись истории статусов для заказа {history.OrderId} успешно добавлена");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Ошибка при добавлении истории статусов для заказа {history.OrderId}", ex);
+                throw;
+            }
+        }
     }
 }
