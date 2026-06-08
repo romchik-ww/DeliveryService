@@ -50,6 +50,7 @@ namespace DeliveryService.Repositories
         /// </summary>
         /// <param name="courierId">айди курьера</param>
         /// <returns></returns>
+<<<<<<< HEAD
         public async Task<Order?> GetByCourierId(int courierId)
         {
             Logger.LogDebug($"Запрос заказа для курьера {courierId}");
@@ -71,6 +72,9 @@ namespace DeliveryService.Repositories
                 throw;
             }
         }
+=======
+        public async Task<Order?> GetByCourierId(int courierId) => await _context.Orders.FirstOrDefaultAsync(x => x.CourierId == courierId);
+>>>>>>> 644a02dc6c6d2af9fc6593825dd037450435a5db
 
         /// <summary>
         /// Получение всех заказов

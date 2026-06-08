@@ -130,13 +130,14 @@ namespace DeliveryService.ViewModels
                 },
                 canExecute: _ => !IsBusy
             );
-            AddCourierCommand = new RelayCommand(() => {
+            AddCourierCommand = new RelayCommand(() =>
+            {
                 if (_windowsService.OpenRegistrationCourier() == true)
                     LoadCouriersCommand.Execute(null);
             });
 
             RemoveCourierCommand = new RelayCommandAsync(
-                execute: async (parameter)=>
+                execute: async (parameter) =>
                 {
                     if (parameter is int courierId)
                         await RemoveCourierAsync(courierId);
@@ -149,13 +150,13 @@ namespace DeliveryService.ViewModels
 
         private async Task RemoveCourierAsync(object id)
         {
-            if(IsBusy) return;
+            if (IsBusy) return;
             if (!int.TryParse(id?.ToString(), out int courierId))
                 return;
 
             var success = await _courierService.RemoveCourierAsync(courierId);
 
-            if (success==true)
+            if (success == true)
                 await LoadCouriersAsync();
             else
             {
@@ -190,7 +191,7 @@ namespace DeliveryService.ViewModels
         /// <param name="id">Id курьера</param>
         private async Task ToggleCourierStatusAsync(object id)
         {
-            if (!int.TryParse(id?.ToString(), out int courierId)) 
+            if (!int.TryParse(id?.ToString(), out int courierId))
                 return;
 
             bool success = await _courierService.ToggleCourierOnlineAsync(courierId);

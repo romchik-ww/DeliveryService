@@ -52,7 +52,7 @@ namespace DeliveryService.ViewModels
         public string AddressFrom
         {
             get => _addressFrom;
-            set => SetProperty(ref _addressFrom, value);    
+            set => SetProperty(ref _addressFrom, value);
         }
 
         public string AddressTo

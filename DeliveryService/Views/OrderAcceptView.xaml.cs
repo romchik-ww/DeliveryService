@@ -14,7 +14,7 @@ namespace DeliveryService.Views
     {
         private readonly SessionService _sessionService;
         private readonly SimulationService _simulationService;
-        public OrderAcceptView(OrderAcceptViewModel vm, SessionService sessionService, SimulationService simulationService)    
+        public OrderAcceptView(OrderAcceptViewModel vm, SessionService sessionService, SimulationService simulationService)
         {
             InitializeComponent();
             DataContext = vm;
@@ -28,7 +28,7 @@ namespace DeliveryService.Views
         private async void OnCourierMoved(double Lat, double Lon)
         {
 
-            await Map.CoreWebView2.ExecuteScriptAsync(
+            _ = await Map.CoreWebView2.ExecuteScriptAsync(
                 string.Format(
                     CultureInfo.InvariantCulture,
                     "MoveCourier({0}, {1})",
@@ -47,7 +47,7 @@ namespace DeliveryService.Views
         {
             await MapInitializer.Initialize(Map);
 
-            if(DataContext is OrderAcceptViewModel vm)
+            if (DataContext is OrderAcceptViewModel vm)
             {
                 vm.CourierAssigned += AddCourierMark;
             }
@@ -57,14 +57,14 @@ namespace DeliveryService.Views
         }
         private async Task AddCourierMark()
         {
-            await Map.CoreWebView2.ExecuteScriptAsync(
+            _ = await Map.CoreWebView2.ExecuteScriptAsync(
             string.Format(CultureInfo.InvariantCulture,
                 "DrawRoute({0}, {1}, {2}, {3}, true)",
                 _sessionService.CurrentOrder.Lat_From,
                 _sessionService.CurrentOrder.Lon_From,
                 _sessionService.CurrentOrder.Lat_To,
                 _sessionService.CurrentOrder.Lon_To));
-            await Map.CoreWebView2.ExecuteScriptAsync(
+            _ = await Map.CoreWebView2.ExecuteScriptAsync(
             string.Format(CultureInfo.InvariantCulture,
                 "AddMark({0}, {1})",
                 _sessionService.CurrentOrder.Courier.Current_Lat, _sessionService.CurrentOrder.Courier.Current_Lon));

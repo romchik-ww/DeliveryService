@@ -3,9 +3,10 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
-    <Nullable>enable</Nullable>
+    <Nullable>disable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <NoWarn>$(NoWarn);NU1701;NETSDK1206;CS0169;CS0067;CS1998;CS4014;CS8601;CS8602;CS8604;CS8612;CS8618;CS8625;CS8632;CS8767</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

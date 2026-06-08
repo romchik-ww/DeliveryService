@@ -82,7 +82,7 @@ namespace DeliveryService.Utils
                 }
             };
 
-        MapWebView.NavigateToString(html);
+            MapWebView.NavigateToString(html);
         }
     }
 }

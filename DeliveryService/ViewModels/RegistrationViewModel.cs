@@ -39,7 +39,7 @@ namespace DeliveryService.ViewModels
         public string PhoneNumber
         {
             get => _phoneNumber;
-            set=>SetProperty(ref _phoneNumber, value);
+            set => SetProperty(ref _phoneNumber, value);
         }
         /// <summary>
         /// Почта
@@ -47,7 +47,7 @@ namespace DeliveryService.ViewModels
         public string Email
         {
             get => _email;
-            set=> SetProperty(ref _email,value); 
+            set => SetProperty(ref _email, value);
         }
         /// <summary>
         /// Имя

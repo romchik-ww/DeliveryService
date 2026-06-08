@@ -129,7 +129,7 @@ namespace DeliveryService.Services
         public async Task<bool> RemoveOrderAsync(int orderId)
         {
             Order? order = await _orderRepository.GetById(orderId);
-            if(order == null) return false;
+            if (order == null) return false;
             await _orderRepository.DeleteAsync(order);
             return true;
         }
@@ -148,7 +148,7 @@ namespace DeliveryService.Services
         /// <returns>true-удачно, false-неудачно</returns>
         public async Task<bool> DeleteAsync(Order order)
         {
-            if(order  == null) return false;
+            if (order == null) return false;
             await _orderRepository.DeleteAsync(order);
             return true;
         }

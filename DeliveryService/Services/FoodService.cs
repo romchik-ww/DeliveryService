@@ -33,7 +33,7 @@ namespace DeliveryService.Services
         /// </summary>
         /// <param name="categoryId">ID категории</param>
         /// <returns>Список объектов еды с указанной категорией. Если таких нет - пустой список</returns>
-        public async Task<List<Food>> GetAllFromCategoryAsync(int categoryId) 
+        public async Task<List<Food>> GetAllFromCategoryAsync(int categoryId)
             => await _foodRepository.GetAllFromCategoryAsync(categoryId);
         /// <summary>
         /// Добавление еды в базы данных

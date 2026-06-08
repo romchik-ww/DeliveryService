@@ -23,7 +23,7 @@ namespace DeliveryService.Repositories
         public async Task<List<Client>> GetAllAsync()
         {
             return await _context.Clients
-                .Include(o=>o.Orders)
+                .Include(o => o.Orders)
                 .ToListAsync();
         }
         /// <summary>
@@ -37,7 +37,7 @@ namespace DeliveryService.Repositories
         /// </summary>
         /// <param name="name">Логин</param>
         /// <returns></returns>
-        public async Task<Client?> GetByName(string name) => await _context.Clients.FirstOrDefaultAsync(x=>x.Name == name);
+        public async Task<Client?> GetByName(string name) => await _context.Clients.FirstOrDefaultAsync(x => x.Name == name);
 
         /// <summary>
         /// Добавление клиента в БД
@@ -46,7 +46,7 @@ namespace DeliveryService.Repositories
         public async Task AddAsync(Client client)
         {
             await _context.Clients.AddAsync(client);
-            await _context.SaveChangesAsync();  
+            await _context.SaveChangesAsync();
         }
 
         /// <summary>

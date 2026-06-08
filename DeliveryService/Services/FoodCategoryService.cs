@@ -35,7 +35,7 @@ namespace DeliveryService.Services
         /// <returns>Прошла ли операция</returns>
         public async Task<bool> AddAsync(Categories categories)
         {
-            if (categories == null) 
+            if (categories == null)
                 return false;
 
             await _foodCategoryRepository.AddAsync(categories);

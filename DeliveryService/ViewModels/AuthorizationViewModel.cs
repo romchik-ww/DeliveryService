@@ -23,7 +23,7 @@ namespace DeliveryService.ViewModels
         public object CurrentView
         {
             get => _currentView;
-            set{ SetProperty(ref _currentView, value);}
+            set { SetProperty(ref _currentView, value); }
         }
 
         /// <summary>

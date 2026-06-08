@@ -5,7 +5,7 @@ namespace DeliveryService.Models
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
-        public string CourierPhone { get; set; }
+        public required string CourierPhone { get; set; }
         public bool IsActive { get; set; } = false;
         public double Current_Lat { get; set; }
         public double Current_Lon { get; set; }

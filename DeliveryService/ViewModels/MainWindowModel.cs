@@ -48,7 +48,8 @@ namespace DeliveryService.ViewModels
         public object CurrentView
         {
             get => _currentView;
-            set {
+            set
+            {
                 switch (value)
                 {
                     case OrderListViewModel o: _dispatcherVm.TimerStop(); o.LoadOrdersCommand.Execute(null); break;
@@ -56,7 +57,7 @@ namespace DeliveryService.ViewModels
                     case ListCouriersViewModel d: _dispatcherVm.TimerStop(); d.LoadCouriersCommand.Execute(null); break;
                 }
                 SetProperty(ref _currentView, value);
-                }
+            }
         }
 
 
@@ -82,14 +83,14 @@ namespace DeliveryService.ViewModels
 
 
                 );
-            OpenOrderListCommand = new RelayCommand(()=>
+            OpenOrderListCommand = new RelayCommand(() =>
                 CurrentView = _ordersVm
-                
+
                 );
-            OpenListCouriersCommand = new RelayCommand(()=>
+            OpenListCouriersCommand = new RelayCommand(() =>
                 CurrentView = _couriersVm
-                
-                
+
+
                 );
 
             CloseRequested += () => _windowsService.CloseWindow(this);
@@ -98,7 +99,8 @@ namespace DeliveryService.ViewModels
                 _windowsService.OpenMenu()
             );
 
-            OpenRegistrationCourierCommand = new RelayCommand(() => { 
+            OpenRegistrationCourierCommand = new RelayCommand(() =>
+            {
                 _windowsService.OpenRegistrationCourier();
             });
 

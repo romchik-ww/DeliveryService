@@ -14,7 +14,7 @@ namespace DeliveryService.ViewModels
         /// <summary>
         /// Интервал таймера
         /// </summary>
-        private const int TIMER_INTERVAL = 30; 
+        private const int TIMER_INTERVAL = 30;
 
         /// <summary>
         /// Таймер, который перезагружает данные
@@ -30,7 +30,13 @@ namespace DeliveryService.ViewModels
         private SimulationService _simulationService;
 
         public event Action? DisposeRequested;
+<<<<<<< HEAD
         
+=======
+
+
+        // ВАЖНО: Поменять названия статусов в комментариях
+>>>>>>> 644a02dc6c6d2af9fc6593825dd037450435a5db
         /// <summary>
         /// Счётчик заказов со статусом "New"
         /// </summary>
@@ -51,7 +57,14 @@ namespace DeliveryService.ViewModels
         /// Выбранный курьер
         /// </summary>
         private Courier _selectedCourier;
+<<<<<<< HEAD
        
+=======
+        /// <summary>
+        /// Выбранный курьер
+        /// </summary>
+
+>>>>>>> 644a02dc6c6d2af9fc6593825dd037450435a5db
         public Courier SelectedCourier
         {
             get => _selectedCourier;
@@ -138,14 +151,14 @@ namespace DeliveryService.ViewModels
         /// <summary>
         /// Событие, которое вызывается при выборе курьера 
         /// </summary>
-        public event Action<double,double,double,double,double,double>? CourierSelected;
+        public event Action<double, double, double, double, double, double>? CourierSelected;
 
         public DispatcherViewModel(OrderService orderService, CourierService courierService, SimulationService simulationService)
         {
             _orderService = orderService;
             _courierService = courierService;
             _simulationService = simulationService;
- 
+
             ActiveOrders = new ObservableCollection<Order>();
             OnlineCouriers = new ObservableCollection<Courier>();
             FreeCouriers = new ObservableCollection<Courier>();
@@ -218,11 +231,15 @@ namespace DeliveryService.ViewModels
         /// <summary>
         /// Функция, срабатывающая при достижении курьером финальной точки
         /// </summary>
+<<<<<<< HEAD
         private void _simulationService_CourierFinal()
         {
             Logger.LogInfo("Курьер достиг финальной точки, обновление данных");
             LoadDataCommand.Execute(null);
         }
+=======
+        private void _simulationService_CourierFinal() => LoadDataCommand.Execute(null);
+>>>>>>> 644a02dc6c6d2af9fc6593825dd037450435a5db
 
         /// <summary>
         /// Загрузка данных о заказах
@@ -235,9 +252,15 @@ namespace DeliveryService.ViewModels
             {
                 var allOrders = await _orderService.GetAllAsync();
 
+<<<<<<< HEAD
                 if (allOrders != null && allOrders.Any())
                 {
                     var activeOrders = allOrders.Where(o => o.Status != "Доставлен").OrderByDescending(o => o.Created_At).ToList();
+=======
+                ActiveOrders.Clear();
+                foreach (var order in activeOrders)
+                    ActiveOrders.Add(order);
+>>>>>>> 644a02dc6c6d2af9fc6593825dd037450435a5db
 
                     ActiveOrders.Clear();
                     foreach (var order in activeOrders) 
@@ -285,9 +308,16 @@ namespace DeliveryService.ViewModels
 
                 var onlineCouriers = freeCouriers.Where(c => c.IsActive).ToList();
 
+<<<<<<< HEAD
                 FreeCouriers.Clear();
                 foreach (var courier in onlineCouriers)
                     FreeCouriers.Add(courier);
+=======
+            FreeCouriers.Clear();
+            foreach (var courier in onlineCouriers)
+                FreeCouriers.Add(courier);
+            ;
+>>>>>>> 644a02dc6c6d2af9fc6593825dd037450435a5db
 
                 Logger.LogDebug($"Загружено {FreeCouriers.Count} свободных курьеров");
             }
@@ -325,6 +355,7 @@ namespace DeliveryService.ViewModels
         /// </summary>
         private async Task LoadCouriersAsync()
         {
+<<<<<<< HEAD
             Logger.LogDebug("Начало загрузки курьеров");
             
             try
@@ -335,6 +366,11 @@ namespace DeliveryService.ViewModels
                     Logger.LogDebug("Курьеры не найдены");
                     return;
                 }
+=======
+            var allCouriers = await _courierService.GetAllAsync();
+            if (allCouriers == null)
+                return;
+>>>>>>> 644a02dc6c6d2af9fc6593825dd037450435a5db
 
                 var onlineCouriers = allCouriers.Where(c => c.IsActive).ToList();
 

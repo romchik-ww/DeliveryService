@@ -45,7 +45,7 @@ namespace DeliveryService.ViewModels
         /// Долгота адреса отправки
         /// </summary>
         private double _lonFrom;
-        
+
         /// <summary>
         /// Адрес доставки
         /// </summary>
@@ -58,7 +58,7 @@ namespace DeliveryService.ViewModels
         /// Долгота адреса доставки
         /// </summary>
         private double _lonTo;
-        
+
         /// <summary>
         /// Цена
         /// </summary>
@@ -164,7 +164,12 @@ namespace DeliveryService.ViewModels
         /// </summary>
         public ICommand LoadUserCommand { get; }
 
+<<<<<<< HEAD
         public NewOrderViewModel(SessionService sessionService, 
+=======
+
+        public NewOrderViewModel(SessionService sessionService,
+>>>>>>> 644a02dc6c6d2af9fc6593825dd037450435a5db
             OrderService orderService, ClientService clientService, BasketService basketService, WindowsService windowService, CourierService courierService)
         {
             _sessionService = sessionService;
@@ -364,12 +369,32 @@ namespace DeliveryService.ViewModels
             }
             catch (Exception ex)
             {
+<<<<<<< HEAD
                 Logger.LogError($"Ошибка при сохранении заказа для пользователя {_sessionService.CurrentClient?.Id}", ex);
                 ErrorMessage = $"Ошибка при создании заказа: {ex.Message}";
                 throw;
+=======
+                ClientId = _sessionService.CurrentClient.Id,
+                Address_From = AddressFrom,
+                Lat_From = LatFrom,
+                Lon_From = LonFrom,
+                Address_To = AddressTo,
+                Lat_To = LatTo,
+                Lon_To = LonTo,
+                Price = Price,
+                Status = "Новый",
+                Created_At = DateTime.UtcNow,
+                BasketId = _clientBasket[0].Id,
+            };
+            bool success = await _orderService.CreateOrderAsync(client, order);
+            if (!success)
+            {
+                ErrorMessage = "Не удалось создать заказ";
+                return;
+>>>>>>> 644a02dc6c6d2af9fc6593825dd037450435a5db
             }
         }
-       
+
         /// <summary>
         /// Устанавливает выбранный адрес в поля для ввода
         /// </summary>

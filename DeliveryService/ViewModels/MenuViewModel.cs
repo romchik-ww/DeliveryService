@@ -43,7 +43,7 @@ namespace DeliveryService.ViewModels
         /// </summary>
         private decimal _totalPrice;
 
-       
+
 
         /// <summary>
         /// Список категорий
@@ -84,13 +84,13 @@ namespace DeliveryService.ViewModels
         public string Username
         {
             get => _userName;
-            set=>SetProperty(ref _userName, value);
+            set => SetProperty(ref _userName, value);
         }
 
         /// <summary>
         /// Команда загрузки данных
         /// </summary>
-        public ICommand LoadDataCommand {  get; }
+        public ICommand LoadDataCommand { get; }
         /// <summary>
         /// Команда загрузки еды по категории
         /// </summary>
@@ -179,7 +179,7 @@ namespace DeliveryService.ViewModels
             );
 
             LogoutCommand = new RelayCommandAsync(
-                execute: () => TryRunTaskAsync(Logout,"Ошибка выхода из аккаунта"),
+                execute: () => TryRunTaskAsync(Logout, "Ошибка выхода из аккаунта"),
                 canExecute: () => !IsBusy
                 );
 
@@ -278,7 +278,7 @@ namespace DeliveryService.ViewModels
         /// </summary>
         private async void OnCurrentUserChanged()
         {
-            if(IsBusy) return;
+            if (IsBusy) return;
             await LoadDataAsync();
         }
         /// <summary>

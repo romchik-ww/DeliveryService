@@ -10,7 +10,7 @@ namespace DeliveryService.Views
     /// <summary>
     /// Логика взаимодействия для MenuView.xaml
     /// </summary>
-   
+
     public partial class MenuView : Window
     {
 

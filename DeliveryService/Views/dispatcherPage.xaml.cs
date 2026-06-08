@@ -43,7 +43,7 @@ namespace DeliveryService.Views
                 _simulationService.CourierMoved -= OnCourierMoved;
                 _simulationService.CourierMoved += OnCourierMoved;
                 MapInitializer.CoordinatesRoute += OnRouteReceived;
-                
+
             }
         }
 
@@ -74,7 +74,7 @@ namespace DeliveryService.Views
                     order.Lat_From, order.Lon_From, order.Lat_To, order.Lon_To));
         }
 
-        private async void OnCourierSelected(double latFrom, double lonFrom,double latTo, double lonTo,double courLat,double courLon)
+        private async void OnCourierSelected(double latFrom, double lonFrom, double latTo, double lonTo, double courLat, double courLon)
         {
             await Map.CoreWebView2.ExecuteScriptAsync(
                 string.Format(CultureInfo.InvariantCulture,

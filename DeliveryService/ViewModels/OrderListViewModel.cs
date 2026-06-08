@@ -228,7 +228,8 @@ namespace DeliveryService.ViewModels
 
             foreach (var courier in all)
             {
-                list.Add(new CourierDTO() { 
+                list.Add(new CourierDTO()
+                {
                     Id = courier.Id,
                     Name = courier.Name,
                 });

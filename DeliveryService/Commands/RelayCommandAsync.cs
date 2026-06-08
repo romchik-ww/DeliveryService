@@ -25,14 +25,14 @@ namespace DeliveryService.Commands
             remove { CommandManager.RequerySuggested -= value; }
         }
 
-       
+
         public RelayCommandAsync(Func<object, Task> execute, Func<object, bool>? canExecute = null)
         {
             _execute = execute ?? throw new ArgumentNullException(nameof(execute));
             _canExecute = canExecute ?? (_ => true);
         }
 
-        public RelayCommandAsync(Func<Task> execute, Func<bool> canExecute = null) 
+        public RelayCommandAsync(Func<Task> execute, Func<bool> canExecute = null)
             : this(_ => execute(), _ => canExecute?.Invoke() ?? true) { }
 
 

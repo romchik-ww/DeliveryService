@@ -14,4 +14,3 @@ namespace DeliveryService.Models
         public ICollection<Order> Orders { get; set; } = new List<Order>();
     }
 }
-    

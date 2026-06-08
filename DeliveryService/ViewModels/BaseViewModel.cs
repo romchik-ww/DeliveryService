@@ -81,9 +81,9 @@ namespace DeliveryService.ViewModels
         /// <returns>Выполнилась ли функция</returns>
         protected async Task<bool> TryRunTaskAsync(Func<Task> task, string? errorName = null)
         {
-            if (IsBusy) 
+            if (IsBusy)
                 return false;
-            
+
             IsBusy = true;
             ErrorMessage = null;
 

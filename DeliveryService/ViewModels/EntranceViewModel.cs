@@ -36,7 +36,7 @@ namespace DeliveryService.ViewModels
         public string Role
         {
             get => _role;
-            set=> SetProperty(ref _role, value);
+            set => SetProperty(ref _role, value);
         }
 
         /// <summary>
@@ -74,9 +74,9 @@ namespace DeliveryService.ViewModels
         /// </summary>
         private readonly WindowsService _windowService;
 
-       /// <summary>
-       /// Команда для авторизации
-       /// </summary>
+        /// <summary>
+        /// Команда для авторизации
+        /// </summary>
         public ICommand LoginCommand { get; }
 
 
